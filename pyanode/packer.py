@@ -1,22 +1,20 @@
+import os
 import io
 import zipfile
-import pathlib
+from importlib import metadata
 
 
 class Bundle(object):
 
-    def __init__(self, package):
-        assert getattr(package, '__package__', None)
-        assert getattr(package, '__path__', None)
-        assert getattr(package, '__name__', None)
-        self.package = package
+    def __init__(self, package_name):
+        self.package = package_name
         self.io = io.BytesIO()
         self.zip = zipfile.ZipFile(self.io, mode='w')
-        self.path = [pathlib.Path(x) for x in package.__path__]
         with zipfile.ZipFile(self.io, mode='w') as self.zip:
-            for path in self.path:
-                for file in path.rglob('*'):
-                    self.zip.write(file, file.relative_to(path.parent))
+            for file in metadata.files(self.package):
+                if os.path.exists(file.locate()):
+                    self.zip.write(file.locate(),
+                                   file.joinpath())
 
     @property
     def data(self):
